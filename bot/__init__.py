@@ -9,4 +9,5 @@ Example:
     asyncio.run(run_bot())
 """
 
-from .main import run_bot  # noqa: F401
+# Alias run_bot to the synchronous main() for backward compatibility.
+from .main import main as run_bot  # noqa: F401 
