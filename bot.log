@@ -1,0 +1,3 @@
+[2025-10-27 07:09:22] [INFO] root: Launching Telegram bot...
+[2025-10-27 07:09:22] [ERROR] bot.utils.database: SQLAlchemy must be installed to use the database: No module named 'sqlalchemy'
+[2025-10-27 07:09:22] [ERROR] root: Database initialization failed: SQLAlchemy is not installed.

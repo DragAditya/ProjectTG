@@ -1,0 +1,20 @@
+{
+  // Vercel deployment configuration for the Telegram bot.
+  // This file ensures that all routes are rewritten to the
+  // serverless function defined in api/index.py. Without this
+  // rewrite, Vercel would attempt to serve static files instead
+  // of invoking the FastAPI handler for Telegram webhooks.
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.py"
+    }
+  ]
+}

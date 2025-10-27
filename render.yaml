@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: telegram-group-management-bot
+    env: python
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+    startCommand: uvicorn api.index:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: WEATHER_API_KEY
+        sync: false
+      - key: TRANSLATION_API_KEY
+        sync: false
+      - key: DICTIONARY_API_KEY
+        sync: false
+      - key: WEBHOOK_URL
+        sync: false
