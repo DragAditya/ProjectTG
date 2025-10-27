@@ -90,13 +90,15 @@ def _register_all_handlers(application: Any) -> None:
             )
 
 
-async def run_bot() -> None:
-    """Asynchronously run the Telegram bot application.
+def main() -> None:
+    """Run the Telegram bot application synchronously.
 
     This function encapsulates the full lifecycle of the bot: loading
     configuration, initializing logging and the database, instantiating
     service clients, registering handlers, and running the polling loop.
-    It gracefully handles shutdown and logs any exceptions.
+    By avoiding async/await on the polling loop, we ensure that
+    python-telegram-bot manages the event loop internally and avoid
+    nested event loop errorsã€166716557778183â€ L1073-L1080ã€‘.
     """
     # Load configuration
     config = BotConfig.load()
@@ -105,9 +107,9 @@ async def run_bot() -> None:
     logger = setup_logging(config.log_file)
     logger.info("Launching Telegram bot...")
 
-    # Initialize the database
+    # Initialize the database (asynchronously via asyncio.run)
     try:
-        await init_db(config.database_url)
+        asyncio.run(init_db(config.database_url))
         logger.info("Database initialized successfully.")
     except Exception as exc:
         logger.error("Database initialization failed: %s", exc)
@@ -121,7 +123,7 @@ async def run_bot() -> None:
 
     # Dynamically import telegram classes
     try:
-        tg_objs = await _import_telegram_objects()
+        tg_objs = asyncio.run(_import_telegram_objects())
     except ImportError as exc:
         logger.error("Cannot import python-telegram-bot: %s", exc)
         return
@@ -149,43 +151,32 @@ async def run_bot() -> None:
     # Register all handlers
     _register_all_handlers(application)
 
-    # Global error handler
-    async def error_handler(update, context):  # type: ignore[no-untyped-def]
+    # Global error handler (synchronous)
+    def error_handler(update, context):  # type: ignore[no-untyped-def]
         logger.exception(
             "Error while handling update (update=%s): %s", update, context.error
         )
 
     application.add_error_handler(error_handler)
 
-    # Start the bot
+    # Start polling (blocking call)
+    logger.info("Bot started. Listening for updates...")
     try:
-        await application.initialize()
-        await application.start()
-        logger.info("Bot started. Listening for updates...")
-        # PTB v20+ uses run_polling instead of start_polling.  We fall back
-        # to updater.start_polling for backward compatibility.
-        try:
-            await application.bot.initialize()
-        except Exception:
-            # ignore
-            pass
-        # Start polling
-        try:
-            # python-telegram-bot v20+ provides run_polling method
-            await application.run_polling()
-        except AttributeError:
-            # Fall back to updater.start_polling
-            await application.updater.start_polling()
-            # Keep running until externally stopped
-            await application.updater.idle()
+        application.run_polling()
+    except Exception as exc:
+        logger.error("Polling loop exited with error: %s", exc)
     finally:
         # Graceful shutdown
         try:
-            await application.stop()
-        finally:
-            await application.shutdown()
-            logger.info("Bot shut down.")
+            asyncio.run(application.stop())
+        except Exception:
+            pass
+        try:
+            asyncio.run(application.shutdown())
+        except Exception:
+            pass
+        logger.info("Bot shut down.")
 
 
 if __name__ == "__main__":
-    asyncio.run(run_bot())
+    main()
